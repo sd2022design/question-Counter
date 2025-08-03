@@ -95,6 +95,42 @@
       height: 100% !important;
     }
 
+    /* モーダルスタイル */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 300px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h3 {
+      margin: 0 0 10px;
+    }
+
+    .modal-content button {
+      margin-top: 10px;
+      padding: 6px 14px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2196F3;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
     @media screen and (max-width: 768px) {
       .container {
         flex-direction: column;
@@ -116,6 +152,10 @@
         問題数：
         <input type="number" id="totalQuestions" min="1" placeholder="例：10">
       </label>
+      <label>
+        合格ライン（%）：
+        <input type="number" id="passLine" min="0" max="100" placeholder="例：80">
+      </label>
 
       <button onclick="increment('correct')">正解</button>
       <button onclick="increment('incorrect')">不正解</button>
@@ -132,12 +172,16 @@
 
     <!-- 右側グラフ -->
     <div class="chart-area">
-      <div class="chart-box">
-        <canvas id="barChart"></canvas>
-      </div>
-      <div class="chart-box">
-        <canvas id="lineChart"></canvas>
-      </div>
+      <div class="chart-box"><canvas id="barChart"></canvas></div>
+      <div class="chart-box"><canvas id="lineChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 合否ダイアログ -->
+  <div class="modal" id="resultModal">
+    <div class="modal-content">
+      <h3 id="resultMessage">結果</h3>
+      <button onclick="closeModal()">閉じる</button>
     </div>
   </div>
 
@@ -212,6 +256,16 @@
       lineChart.data.labels.push(total.toString());
       lineChart.data.datasets[0].data.push(parseFloat(percentage));
       lineChart.update();
+
+      // 合否判定チェック
+      if (totalQuestions > 0 && total === totalQuestions) {
+        const passLine = parseFloat(document.getElementById("passLine").value) || 0;
+        if (percentage >= passLine) {
+          showResult("🎉 おめでとう！合格です！");
+        } else {
+          showResult("😢 残念、不合格。次は頑張ろう！");
+        }
+      }
     }
 
     function increment(type) {
@@ -226,13 +280,24 @@
       incorrect = 0;
       timestamps = [];
       document.getElementById("totalQuestions").value = "";
+      document.getElementById("passLine").value = "";
       document.getElementById("avgTime").textContent = "0.0";
       lineChart.data.labels = [];
       lineChart.data.datasets[0].data = [];
       updateDisplay();
     }
 
+    function showResult(message) {
+      document.getElementById("resultMessage").textContent = message;
+      document.getElementById("resultModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("resultModal").style.display = "none";
+    }
+
     document.getElementById("totalQuestions").addEventListener("input", updateDisplay);
+    document.getElementById("passLine").addEventListener("input", updateDisplay);
   </script>
 
 </body>
