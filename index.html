@@ -2,205 +2,303 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>正解率カウンター</title>
+  <title>カウントダッシュボード</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
   <style>
     body {
-      font-family: sans-serif;
-      margin: 10px;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #fefcea, #f1da36);
+      margin: 0;
+      padding: 10px;
+      box-sizing: border-box;
     }
-    header {
+
+    h2 {
+      font-size: 20px;
+      margin: 10px 0;
+      text-align: center;
+      color: #444;
+    }
+
+    .container {
       display: flex;
-      align-items: center;
+      max-width: 900px;
+      margin: auto;
       gap: 10px;
-      font-size: 12px;
+      align-items: flex-start;
     }
-    .dashboard {
+
+    .panel {
+      flex: 1;
+      background: white;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
       display: flex;
-      justify-content: space-between;
-      align-items: start;
-      gap: 20px;
-      margin-top: 10px;
-      height: 85vh;
+      flex-direction: column;
+      align-items: center;
     }
+
+    .panel input[type="number"] {
+      padding: 6px;
+      width: 100px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+
+    .panel button {
+      margin: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+      width: 90%;
+    }
+
+    .panel button:nth-of-type(1) { background-color: #4CAF50; }
+    .panel button:nth-of-type(2) { background-color: #F44336; }
+    .panel button:nth-of-type(3) { background-color: #2196F3; }
+
     .stats {
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .stats p {
+      margin: 4px 0;
+    }
+
+    .chart-area {
+      flex: 2;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      width: 200px;
     }
-    .stats div {
-      font-size: 14px;
+
+    .chart-box {
+      background: white;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+      height: 200px;
     }
+
     canvas {
-      flex-grow: 1;
-      height: 100%;
+      width: 100% !important;
+      height: 100% !important;
     }
-    .buttons {
-      display: flex;
-      gap: 10px;
+
+    /* モーダルスタイル */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 300px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h3 {
+      margin: 0 0 10px;
+    }
+
+    .modal-content button {
       margin-top: 10px;
-    }
-    button {
-      padding: 5px 15px;
+      padding: 6px 14px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2196F3;
+      color: white;
       font-size: 14px;
       cursor: pointer;
+    }
+
+    @media screen and (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+      .chart-box {
+        height: 180px;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
-    <label>問題数: <input type="number" id="totalQuestionsInput" min="1" value="10" style="width: 50px;"></label>
-    <label>合格ライン（％）: <input type="number" id="passThresholdInput" min="0" max="100" value="80" style="width: 50px;"></label>
-    <button onclick="start()">スタート</button>
-  </header>
 
-  <div class="dashboard">
-    <div class="stats">
-      <div>正解: <span id="correctCount">0</span></div>
-      <div>不正解: <span id="wrongCount">0</span></div>
-      <div>正解率: <span id="accuracy">0</span>%</div>
-      <div>進捗: <span id="progress">0</span>/<span id="total">0</span></div>
-      <div class="buttons">
-        <button onclick="answer(true)">正解</button>
-        <button onclick="answer(false)">不正解</button>
+  <h2>🎯 正解カウンター・ダッシュボード</h2>
+
+  <div class="container">
+    <!-- 左側パネル -->
+    <div class="panel">
+      <label>
+        問題数：
+        <input type="number" id="totalQuestions" min="1" placeholder="例：10">
+      </label>
+      <label>
+        合格ライン（%）：
+        <input type="number" id="passLine" min="0" max="100" placeholder="例：80">
+      </label>
+
+      <button onclick="increment('correct')">正解</button>
+      <button onclick="increment('incorrect')">不正解</button>
+      <button onclick="resetCounts()">リセット</button>
+
+      <div class="stats">
+        <p>✅ 正解数：<span id="correct">0</span></p>
+        <p>❌ 不正解数：<span id="incorrect">0</span></p>
+        <p>📊 正解率：<span id="percentage">0%</span></p>
+        <p>📈 進行状況：<span id="progress">0/0</span></p>
+        <p>⏱ 平均回答時間：<span id="avgTime">0.0</span> 秒</p>
       </div>
     </div>
-    <canvas id="chart"></canvas>
+
+    <!-- 右側グラフ -->
+    <div class="chart-area">
+      <div class="chart-box"><canvas id="barChart"></canvas></div>
+      <div class="chart-box"><canvas id="lineChart"></canvas></div>
+    </div>
   </div>
 
-  <dialog id="resultDialog">
-    <p id="resultMessage"></p>
-    <button onclick="document.getElementById('resultDialog').close()">閉じる</button>
-  </dialog>
+  <!-- 合否ダイアログ -->
+  <div class="modal" id="resultModal">
+    <div class="modal-content">
+      <h3 id="resultMessage">結果</h3>
+      <button onclick="closeModal()">閉じる</button>
+    </div>
+  </div>
 
   <script>
     let correct = 0;
-    let wrong = 0;
-    let totalQuestions = 10;
-    let passThreshold = 80;
-    let dataPoints = [];
+    let incorrect = 0;
+    let timestamps = [];
 
-    const correctCountElem = document.getElementById('correctCount');
-    const wrongCountElem = document.getElementById('wrongCount');
-    const accuracyElem = document.getElementById('accuracy');
-    const progressElem = document.getElementById('progress');
-    const totalElem = document.getElementById('total');
-    const resultDialog = document.getElementById('resultDialog');
-    const resultMessage = document.getElementById('resultMessage');
+    const barCtx = document.getElementById('barChart').getContext('2d');
+    const lineCtx = document.getElementById('lineChart').getContext('2d');
 
-    const ctx = document.getElementById('chart').getContext('2d');
-    let chart;
-
-    function start() {
-      correct = 0;
-      wrong = 0;
-      dataPoints = [];
-      totalQuestions = parseInt(document.getElementById('totalQuestionsInput').value);
-      passThreshold = parseFloat(document.getElementById('passThresholdInput').value);
-
-      correctCountElem.textContent = 0;
-      wrongCountElem.textContent = 0;
-      accuracyElem.textContent = 0;
-      progressElem.textContent = 0;
-      totalElem.textContent = totalQuestions;
-
-      if (chart) {
-        chart.destroy();
-      }
-
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          datasets: [{
-            label: '正解率',
-            data: dataPoints,
-            borderColor: 'blue',
-            fill: false,
-            tension: 0.1
-          }]
+    const barChart = new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels: ['正解', '不正解'],
+        datasets: [{
+          label: '件数',
+          data: [0, 0],
+          backgroundColor: ['#4CAF50', '#F44336']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            annotation: {
-              annotations: {
-                passLine: {
-                  type: 'line',
-                  yMin: passThreshold,
-                  yMax: passThreshold,
-                  borderColor: 'red',
-                  borderWidth: 2,
-                  borderDash: [6, 6],
-                  label: {
-                    content: `合格ライン ${passThreshold}%`,
-                    enabled: true,
-                    position: 'end',
-                    color: 'red',
-                    font: {
-                      size: 10
-                    },
-                    backgroundColor: 'rgba(255,255,255,0.7)',
-                    padding: 4
-                  }
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              type: 'linear',
-              min: 0,
-              max: totalQuestions,
-              title: {
-                display: true,
-                text: '回答数'
-              }
-            },
-            y: {
-              min: 0,
-              max: 100,
-              title: {
-                display: true,
-                text: '正解率（％）'
-              }
-            }
-          }
-        },
-        plugins: [ChartAnnotation]
-      });
-    }
-
-    function answer(isCorrect) {
-      if (correct + wrong >= totalQuestions) return;
-
-      if (isCorrect) correct++;
-      else wrong++;
-
-      const total = correct + wrong;
-      const accuracy = Math.round((correct / total) * 100);
-      correctCountElem.textContent = correct;
-      wrongCountElem.textContent = wrong;
-      accuracyElem.textContent = accuracy;
-      progressElem.textContent = total;
-
-      dataPoints.push({ x: total, y: accuracy });
-      chart.update();
-
-      if (total === totalQuestions) {
-        if (accuracy >= passThreshold) {
-          resultMessage.textContent = "🎉 おめでとう！合格です！";
-        } else {
-          resultMessage.textContent = "😢 残念、不合格。次は頑張ろう！";
+        plugins: {
+          legend: { display: false }
         }
-        resultDialog.showModal();
+      }
+    });
+
+    const lineChart = new Chart(lineCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: '正解率 (%)',
+          data: [],
+          borderColor: '#2196F3',
+          tension: 0.3,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { min: 0, max: 100 }
+        }
+      }
+    });
+
+    function updateDisplay() {
+      const total = correct + incorrect;
+      const totalQuestions = parseInt(document.getElementById("totalQuestions").value) || 0;
+      const percentage = total > 0 ? ((correct / total) * 100).toFixed(1) : 0;
+      const avgTime = (timestamps.length > 1)
+        ? ((timestamps[timestamps.length - 1] - timestamps[0]) / 1000 / (timestamps.length - 1)).toFixed(1)
+        : 0.0;
+
+      document.getElementById("correct").textContent = correct;
+      document.getElementById("incorrect").textContent = incorrect;
+      document.getElementById("percentage").textContent = `${percentage}%`;
+      document.getElementById("progress").textContent = `${total}/${totalQuestions}`;
+      document.getElementById("avgTime").textContent = avgTime;
+
+      barChart.data.datasets[0].data = [correct, incorrect];
+      barChart.update();
+
+      lineChart.data.labels.push(total.toString());
+      lineChart.data.datasets[0].data.push(parseFloat(percentage));
+      lineChart.update();
+
+      // 合否判定チェック
+      if (totalQuestions > 0 && total === totalQuestions) {
+        const passLine = parseFloat(document.getElementById("passLine").value) || 0;
+        if (percentage >= passLine) {
+          showResult("🎉 おめでとう！合格です！");
+        } else {
+          showResult("😢 残念、不合格。次は頑張ろう！");
+        }
       }
     }
+
+    function increment(type) {
+      if (type === "correct") correct++;
+      else if (type === "incorrect") incorrect++;
+      timestamps.push(new Date().getTime());
+      updateDisplay();
+    }
+
+    function resetCounts() {
+      correct = 0;
+      incorrect = 0;
+      timestamps = [];
+      document.getElementById("totalQuestions").value = "";
+      document.getElementById("passLine").value = "";
+      document.getElementById("avgTime").textContent = "0.0";
+      lineChart.data.labels = [];
+      lineChart.data.datasets[0].data = [];
+      updateDisplay();
+    }
+
+    function showResult(message) {
+      document.getElementById("resultMessage").textContent = message;
+      document.getElementById("resultModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("resultModal").style.display = "none";
+    }
+
+    document.getElementById("totalQuestions").addEventListener("input", updateDisplay);
+    document.getElementById("passLine").addEventListener("input", updateDisplay);
   </script>
+
 </body>
 </html>
