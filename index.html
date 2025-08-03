@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>カウントダッシュボード</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -95,7 +96,6 @@
       height: 100% !important;
     }
 
-    /* モーダルスタイル */
     .modal {
       display: none;
       position: fixed;
@@ -146,7 +146,6 @@
   <h2>🎯 正解カウンター・ダッシュボード</h2>
 
   <div class="container">
-    <!-- 左側パネル -->
     <div class="panel">
       <label>
         問題数：
@@ -170,14 +169,12 @@
       </div>
     </div>
 
-    <!-- 右側グラフ -->
     <div class="chart-area">
       <div class="chart-box"><canvas id="barChart"></canvas></div>
       <div class="chart-box"><canvas id="lineChart"></canvas></div>
     </div>
   </div>
 
-  <!-- 合否ダイアログ -->
   <div class="modal" id="resultModal">
     <div class="modal-content">
       <h3 id="resultMessage">結果</h3>
@@ -209,9 +206,7 @@
         scales: {
           y: { beginAtZero: true, ticks: { stepSize: 1 } }
         },
-        plugins: {
-          legend: { display: false }
-        }
+        plugins: { legend: { display: false } }
       }
     });
 
@@ -231,10 +226,45 @@
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          y: { min: 0, max: 100 }
+          y: {
+            min: 0,
+            max: 100
+          }
+        },
+        plugins: {
+          annotation: {
+            annotations: {}
+          }
         }
-      }
+      },
+      plugins: [ChartAnnotation]
     });
+
+    function updatePassLineAnnotation() {
+      const passLine = parseFloat(document.getElementById("passLine").value) || null;
+
+      if (passLine !== null) {
+        lineChart.options.plugins.annotation.annotations = {
+          passLine: {
+            type: 'line',
+            yMin: passLine,
+            yMax: passLine,
+            borderColor: 'red',
+            borderWidth: 2,
+            label: {
+              content: '合格ライン',
+              enabled: true,
+              position: 'start',
+              backgroundColor: 'rgba(255,0,0,0.5)'
+            }
+          }
+        };
+      } else {
+        lineChart.options.plugins.annotation.annotations = {};
+      }
+
+      lineChart.update();
+    }
 
     function updateDisplay() {
       const total = correct + incorrect;
@@ -257,7 +287,6 @@
       lineChart.data.datasets[0].data.push(parseFloat(percentage));
       lineChart.update();
 
-      // 合否判定チェック
       if (totalQuestions > 0 && total === totalQuestions) {
         const passLine = parseFloat(document.getElementById("passLine").value) || 0;
         if (percentage >= passLine) {
@@ -284,6 +313,8 @@
       document.getElementById("avgTime").textContent = "0.0";
       lineChart.data.labels = [];
       lineChart.data.datasets[0].data = [];
+      lineChart.options.plugins.annotation.annotations = {};
+      barChart.data.datasets[0].data = [0, 0];
       updateDisplay();
     }
 
@@ -297,7 +328,7 @@
     }
 
     document.getElementById("totalQuestions").addEventListener("input", updateDisplay);
-    document.getElementById("passLine").addEventListener("input", updateDisplay);
+    document.getElementById("passLine").addEventListener("input", updatePassLineAnnotation);
   </script>
 
 </body>
