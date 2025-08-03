@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>カウントツール</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      text-align: center;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    input[type="number"] {
+      padding: 5px;
+      width: 100px;
+      font-size: 16px;
+    }
+    .stats {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>正解カウンター</h2>
+
+  <label>
+    問題数：
+    <input type="number" id="totalQuestions" min="1" placeholder="例：10">
+  </label>
+
+  <div class="stats">
+    <p>正解数：<span id="correct">0</span></p>
+    <p>不正解数：<span id="incorrect">0</span></p>
+    <p>正解率：<span id="percentage">0%</span></p>
+    <p>進行状況：<span id="progress">0/0</span></p>
+  </div>
+
+  <button onclick="increment('correct')">正解</button>
+  <button onclick="increment('incorrect')">不正解</button>
+  <button onclick="resetCounts()">リセット</button>
+
+  <script>
+    let correct = 0;
+    let incorrect = 0;
+
+    function updateDisplay() {
+      const total = correct + incorrect;
+      const totalQuestions = parseInt(document.getElementById("totalQuestions").value) || 0;
+      const percentage = total > 0 ? ((correct / total) * 100).toFixed(1) : 0;
+
+      document.getElementById("correct").textContent = correct;
+      document.getElementById("incorrect").textContent = incorrect;
+      document.getElementById("percentage").textContent = `${percentage}%`;
+      document.getElementById("progress").textContent = `${total}/${totalQuestions}`;
+    }
+
+    function increment(type) {
+      if (type === "correct") correct++;
+      else if (type === "incorrect") incorrect++;
+      updateDisplay();
+    }
+
+    function resetCounts() {
+      correct = 0;
+      incorrect = 0;
+      document.getElementById("totalQuestions").value = "";
+      updateDisplay();
+    }
+
+    document.getElementById("totalQuestions").addEventListener("input", updateDisplay);
+  </script>
+
+</body>
+</html>
